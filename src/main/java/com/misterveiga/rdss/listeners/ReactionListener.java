@@ -7,6 +7,7 @@ package com.misterveiga.rdss.listeners;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +79,7 @@ public class ReactionListener extends ListenerAdapter {
 	private static final String COMMAND_CLEAN_MESSAGES_USER = ";clean user %s";
 
 	/** The Constant COMMAND_REASON. */
-	private static final String COMMAND_REASON = "(By %s) Evidence: %s";
+	private static final String COMMAND_REASON = "(By %s) Message Evidence: %s";
 
 	/**
 	 * On message reaction add.
@@ -87,7 +88,7 @@ public class ReactionListener extends ListenerAdapter {
 	 */
 
 	@Override
-	public void onMessageReactionAdd(final MessageReactionAddEvent event) {
+		public void onMessageReactionAdd(final MessageReactionAddEvent event) {
 		final TextChannel commandChannel = event.getGuild().getTextChannelById(Properties.CHANNEL_COMMANDS_ID);
 
 		final MessageReaction reaction = event.getReaction();
@@ -103,8 +104,14 @@ public class ReactionListener extends ListenerAdapter {
 				|| RoleUtils.findRole(event.getMember(), RoleUtils.ROLE_COMMUNITY_SUPERVISOR) != null) {
 
 			switch (emote.getId()) {
-			case ID_REACTION_MUTE: muteUser(reactee, messageAuthor, "30m", message, commandChannel); break;
-			case ID_REACTION_MUTE2: muteUser(reactee, messageAuthor, "1h", message, commandChannel); break;
+			case ID_REACTION_MUTE: muteUser(reactee, messageAuthor, "30m", message, commandChannel);
+			clearMessages(messageAuthor, channel);
+			break;
+
+			case ID_REACTION_MUTE2: muteUser(reactee, messageAuthor, "1h", message, commandChannel);
+			clearMessages(messageAuthor, channel);
+			break;
+
 			case ID_REACTION_CLEAR_MESSAGES:
 				// clearMessages(messageAuthor, channel);
 				break;
@@ -162,7 +169,7 @@ public class ReactionListener extends ListenerAdapter {
 
 					//log.info("[Reaction Command] Quick-Mute executed by {} on {} for Message \"{}\"", reactee,
 					//	messageAuthor ,message);
-					//	clearMessages(messageAuthor, channel);
+					//clearMessages(messageAuthor, channel);
 		}
 	}
 
@@ -173,9 +180,10 @@ public class ReactionListener extends ListenerAdapter {
 	 * @param messageAuthor the message author
 	 * @param channel       the channel
 	 */
+
 	private void clearMessages(final Member messageAuthor, final MessageChannel channel) {
 		channel.sendMessage(String.format(COMMAND_CLEAN_MESSAGES_USER, messageAuthor.getId()))
-				.queue(message -> message.delete().queue());
+				.queue(message -> message.delete().queueAfter(500, TimeUnit.MILLISECONDS));
 		log.info(String.format(COMMAND_CLEAN_MESSAGES_USER, messageAuthor.getId()));
 	}
 }
